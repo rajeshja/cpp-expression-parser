@@ -4,22 +4,28 @@
 
 using namespace std;
 
-ExpressionParser::ExpressionParser() {}
+void parse_and_print(const char* expression) {
+    ExpressionParser parser(expression);
+    parser.parse();
+    cout << "------------------\n";
+    cout << expression << " -> ";
+    parser.dump_queue(false);
+    cout << "\n\n";
 
-ExpressionParser::ExpressionParser(const char* expression) {
-    this->expression = expression;
-}
-
-void ExpressionParser::dump() {
-    cout << expression << "\n";
 }
 
 int main(int argc, const char** argv) {
 
-    ExpressionParser parser("1234 567");
-    parser.dump();
+    ExpressionParser parser("12+sin(x)  - (3*-y^5)");
+    parse_and_print("4+18/(9-3)");
+    parse_and_print("A * B + C");
+    parse_and_print("A + B * C");
+    parse_and_print("A * (B + C)");
+    parse_and_print("A - B + C");
+    parse_and_print("A * B ^ C + D");
+    parse_and_print("A * (B + C * D) + E");
 
-    for(int i=0; i<argc; i++) {
-        cout << argv[i] << "\n";
-    }    
+    // for(int i=0; i<argc; i++) {
+    //     cout << argv[i] << "\n";
+    // }    
 }
