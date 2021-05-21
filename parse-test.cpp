@@ -16,7 +16,9 @@ void parse_and_print(const char* expression) {
 
 int main(int argc, const char** argv) {
 
-    ExpressionParser parser("12+sin(x)  - (3*-y^5)");
+    parse_and_print("12+x-(3*y^5)");
+    parse_and_print("12+(x)-(3*y^5)");
+    parse_and_print("12+sin(x)  - (3*y^5)");
     parse_and_print("4+18/(9-3)");
     parse_and_print("A * B + C");
     parse_and_print("A + B * C");
