@@ -135,23 +135,26 @@ void ExpressionParser::add_token(int token_start, int token_end) {
         tokens.insert(tokens.end(), token);
 
         if (token.type==number || token.type==variable) {
-            // cout << "Found a number" << "\n";
+            cout << "Found a number" << "\n";
             output_queue.push(token);
         } else if (token.type==op || token.type==function) {
-            // cout << "Found an op" << "\n";
+            cout << "Found an op" << "\n";
             if (token.token=="(" 
-                || operator_stack.size()==0 
-                || operator_stack.top().token=="("
+                || operator_stack.size()==0
+                || (operator_stack.top().token=="(" && token.token[0]!=')')
                 || token.type==function) {
-                // cout << "\tFirst element to stack" << "\n";
+                cout << "\tFirst element to stack" << "\n";
                 operator_stack.push(token);
             } else if (token.token[0]==')') {
-                // cout << "\top is a right-bracket" << "\n";
+                cout << "\top is a right-bracket" << "\n";
                 while (!operator_stack.empty() && operator_stack.top().token[0]!='(') {
+                    cout << "Moving " << operator_stack.top().token << " to queue\n";
                     pop_opstack_to_outqueue();
                 }
                 // cout << "Hopefully popping left bracket off stack: " << operator_stack.top().token << "\n";
-                operator_stack.pop();
+                if (!operator_stack.empty()) {
+                    operator_stack.pop();
+                }
             } else if (!has_precedence(operator_stack.top(), token)) {
                 // cout << "\top doesn't have precedence:: " << token.token << "\n";
                 do {
