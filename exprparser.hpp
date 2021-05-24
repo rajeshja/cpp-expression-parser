@@ -35,7 +35,9 @@ class ExpressionToken {
     public:
     ExpressionToken();
     ExpressionToken(string token, TokenType type);
+    ExpressionToken(string token, TokenType type, double value);
     string token;
+    double token_value;
     TokenType type;
 };
 
@@ -50,7 +52,7 @@ class ExpressionParser {
     OperatorDetails get_operator_details(char op);
     double evaluate(map<string, double> variables);
     private:
-    void add_token(int token_start, int token_end);
+    bool add_token(int token_start, int token_end);
     bool has_precedence(ExpressionToken curr, ExpressionToken prev);
     bool is_operator(char character);
     bool is_digit(char character);

@@ -53,6 +53,13 @@ ExpressionToken::ExpressionToken() {}
 ExpressionToken::ExpressionToken(string token, TokenType type) {
     this->token = token;
     this->type = type;
+    this->token_value = NAN;
+}
+
+ExpressionToken::ExpressionToken(string token, TokenType type, double value) {
+    this->token = token;
+    this->type = type;
+    this->token_value = value;
 }
 
 ExpressionParser::ExpressionParser() {}
@@ -84,19 +91,15 @@ bool ExpressionParser::is_operator(char character) {
 }
 
 bool ExpressionParser::is_number(string text) {
-    double parsed_num;
-    istringstream num_stream(text);
+    char* pEnd;
+    const char* text_c_str = text.c_str(); 
 
-    if (text[0]=='0' && text[1]=='x') {
-        num_stream >> hex;
-    } else if (text[0]=='0') {
-        num_stream >> oct;
-    }
+    double parsed_to_d = strtod(text.c_str(), &pEnd);
+    size_t num_length = (size_t)(pEnd-text_c_str);
+    bool valid_parse = text.size() == num_length;
+    // cout << "strtod() got this: " << parsed_to_d << "; Length is " << num_length << ", Valid Parse=" << valid_parse << "\n";
 
-    num_stream >> parsed_num;
-    num_stream >> ws;
-
-    return (!num_stream.fail() & num_stream.eof());
+    return valid_parse;
 }
 
 bool ExpressionParser::is_variable(string text) {
@@ -113,23 +116,17 @@ bool ExpressionParser::is_variable(string text) {
 }
 
 double ExpressionParser::get_number(string text) {
-        double parsed_num;
-        istringstream num_stream(text);
+    char* pEnd;
+    const char* text_c_str = text.c_str(); 
+    double parsed_to_d = strtod(text.c_str(), &pEnd);
+    size_t num_length = (size_t)(pEnd-text_c_str);
+    bool valid_parse = text.size() == num_length;
 
-        if (text[0]=='0' && text[1]=='x') {
-            num_stream >> hex;
-        } else if (text[0]=='0') {
-            num_stream >> oct;
-        }
-
-        num_stream >> parsed_num;
-        num_stream >> ws;
-
-        if (!num_stream.fail() & num_stream.eof()) {
-            return parsed_num;
-        } else {
-            return 0.0;
-        }
+    if (valid_parse) {
+        return parsed_to_d;
+    } else {
+        return 0.0;
+    }
 }
 
 bool ExpressionParser::is_function(string text) {
@@ -182,10 +179,12 @@ char ExpressionParser::get_last_printable_char_before(int index) {
     return '\0';
 }
 
-void ExpressionParser::add_token(int token_start, int token_end) {
+bool ExpressionParser::add_token(int token_start, int token_end) {
     if (token_start<token_end) {
         string token_name(expression+token_start, expression+token_end);
+        // std::cout << "Token being added, start=" << token_start << " end=" << token_end << ", token=" << token_name << "\n";
         TokenType type;
+        double token_value = NAN;
         if (is_operator(expression[token_start])) {
             //TODO: ("Differentiate between unary and binary operators")
             // If first token, or if previous token is ( or another operator but not )
@@ -205,21 +204,28 @@ void ExpressionParser::add_token(int token_start, int token_end) {
             }
         } else if (is_number(token_name)) {
             type = TokenType(number);
+            //token_name = to_string(get_number(token_name));
+            token_value = get_number(token_name);
         } else if (is_function(token_name)) {
             type = TokenType(function);
         } else if (is_variable(token_name)) {
             type = TokenType(variable);
         } else {
-            cerr << "Invalid token " << token_name;
-            return;
+            cerr << "Invalid token " << token_name << "\n";
+            return false;
         }
-        ExpressionToken token(token_name, type);
+        ExpressionToken token;
+        if (token_value!=NAN) {
+            token = ExpressionToken(token_name, type, token_value);    
+        } else {
+            token = ExpressionToken(token_name, type);
+        }
         // if (tokens.size()>0) {
         //     cout << "Previous: " << tokens[tokens.size()-1].token << "; Current: " << token.token << "\n";
         // }
 
         if (token_name=="|") {
-            return;
+            return true;
         }
 
         tokens.insert(tokens.end(), token);
@@ -263,7 +269,9 @@ void ExpressionParser::add_token(int token_start, int token_end) {
         cout << " | ";
         dump_queue(false);
         cout << "\n";
+
     }
+    return true;
 }
 
 void ExpressionParser::parse() {
@@ -275,7 +283,11 @@ void ExpressionParser::parse() {
             || (is_whitespace(current_char))
             || (is_operator(expression[i-1]))
             ) {
-            add_token(token_start, i);
+            bool token_added = add_token(token_start, i);
+            if (!token_added) {
+                cerr << "Token start: " << token_start << ", token end: " << i << "\n";
+                throw invalid_argument("Parsing error, Invalid token found.");
+            }
             token_start=i;
             if (is_whitespace(current_char)) {
                 token_start++;
@@ -284,7 +296,10 @@ void ExpressionParser::parse() {
         i++;
         current_char = expression[i];
     }
-    add_token(token_start, i);
+    bool token_added = add_token(token_start, i);
+    if (!token_added) {
+        throw invalid_argument("Parsing error, Invalid token found. (adding operator)");
+    }
     while (!operator_stack.empty()) {
         output_queue.push(operator_stack.top());
         operator_stack.pop();
@@ -301,12 +316,12 @@ double ExpressionParser::evaluate(map<string, double> variables) {
         if (curr_token.type==variable) {
             evaluation_stack.push(variables.at(curr_token.token));
         } else if (curr_token.type==number) {
-            evaluation_stack.push(get_number(curr_token.token));
+            evaluation_stack.push(curr_token.token_value);
         } else if (curr_token.type==unary_operator || curr_token.type==function) {
             double x = evaluation_stack.top();
             evaluation_stack.pop();
             // Dummy implementation
-            cout << "Evaluating " << curr_token.token << "(" << x << ")\n";
+            cout << "Evaluating " << curr_token.token_value << "(" << x << ")\n";
             //Push 0 as dummy value
             evaluation_stack.push(1);
         } else if (curr_token.type==binary_operator) {
@@ -315,7 +330,7 @@ double ExpressionParser::evaluate(map<string, double> variables) {
             double y = evaluation_stack.top();
             evaluation_stack.pop();
             // Dummy implementation
-            cout << "Evaluating " << x << curr_token.token << y << "\n";
+            cout << "Evaluating " << x << curr_token.token_value << y << "\n";
             evaluation_stack.push(2);
         }
 
