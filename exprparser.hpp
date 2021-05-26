@@ -11,7 +11,6 @@ using namespace std;
 
 enum TokenType {
     number,
-    //op,
     unary_operator,
     binary_operator,
     variable,
@@ -38,13 +37,15 @@ class OperatorDetails {
 class OperationDetails {
     public:
     OperationDetails();
-    OperationDetails(string function, NodeMathOperation operation, TokenType type);
+    OperationDetails(string function, NodeMathOperation operation, short no_of_params);
     string function;
     NodeMathOperation operation;
-    TokenType type;
+    short no_of_params;
     private:
 };
 
+// TODO Should use an Expression Token base class, with number, variable and operation subclasses 
+// TODO That way we don't need so many token types - except while parsing
 class ExpressionToken {
     public:
     ExpressionToken();
@@ -80,6 +81,7 @@ class ExpressionParser {
     bool is_exponent(char character);
     bool is_function(string text);
     bool is_number(string text);
+    bool is_constant(string text);
     bool is_variable(string text);
     double get_number(string text);
     void pop_opstack_to_outqueue();
@@ -141,23 +143,41 @@ class ExpressionParser {
         "sqrt"
     };
     map<string, OperationDetails> FUNCTIONS_MAPPING {
-        {"abs", OperationDetails("abs", NODE_MATH_ABSOLUTE, function_1param)},
-        {"exp", OperationDetails("exp", NODE_MATH_EXPONENT, function_1param)},
-        {"sign", OperationDetails("sign", NODE_MATH_SIGN, function_1param)},
-        {"round", OperationDetails("round", NODE_MATH_ROUND, function_1param)},
-        {"floor", OperationDetails("floor", NODE_MATH_FLOOR, function_1param)},
-        {"ceil", OperationDetails("ceil", NODE_MATH_CEIL, function_1param)},
-        {"fraction", OperationDetails("fraction", NODE_MATH_FRACTION, function_1param)},
-        {"trunc", OperationDetails("trunc", NODE_MATH_TRUNC, function_1param)},
-        {"sqrt", OperationDetails("sqrt", NODE_MATH_SQRT, function_1param)},
-        {"isqrt", OperationDetails("isqrt", NODE_MATH_INV_SQRT, function_1param)},
-        {"deg2rad", OperationDetails("deg2rad", NODE_MATH_RADIANS, function_1param)},
-        {"rad2deg", OperationDetails("rad2deg", NODE_MATH_DEGREES, function_1param)},
-        {"sin", OperationDetails("sin", NODE_MATH_SINE, function_1param)},
-        {"cos", OperationDetails("cos", NODE_MATH_COSINE, function_1param)},
-        {"tan", OperationDetails("tan", NODE_MATH_TANGENT, function_1param)},
-        {"sinh", OperationDetails("sinh", NODE_MATH_SINH, function_1param)},
-        {"cosh", OperationDetails("cosh", NODE_MATH_COSH, function_1param)},
-        {"tanh", OperationDetails("tanh", NODE_MATH_TANH, function_1param)}
+        {"abs", OperationDetails("abs", NODE_MATH_ABSOLUTE, 1)},
+        {"exp", OperationDetails("exp", NODE_MATH_EXPONENT, 1)},
+        {"sign", OperationDetails("sign", NODE_MATH_SIGN, 1)},
+        {"round", OperationDetails("round", NODE_MATH_ROUND, 1)},
+        {"floor", OperationDetails("floor", NODE_MATH_FLOOR, 1)},
+        {"ceil", OperationDetails("ceil", NODE_MATH_CEIL, 1)},
+        {"fraction", OperationDetails("fraction", NODE_MATH_FRACTION, 1)},
+        {"trunc", OperationDetails("trunc", NODE_MATH_TRUNC, 1)},
+        {"sqrt", OperationDetails("sqrt", NODE_MATH_SQRT, 1)},
+        {"isqrt", OperationDetails("isqrt", NODE_MATH_INV_SQRT, 1)},
+        {"deg2rad", OperationDetails("deg2rad", NODE_MATH_RADIANS, 1)},
+        {"rad2deg", OperationDetails("rad2deg", NODE_MATH_DEGREES, 1)},
+        {"sin", OperationDetails("sin", NODE_MATH_SINE, 1)},
+        {"cos", OperationDetails("cos", NODE_MATH_COSINE, 1)},
+        {"tan", OperationDetails("tan", NODE_MATH_TANGENT, 1)},
+        {"sinh", OperationDetails("sinh", NODE_MATH_SINH, 1)},
+        {"cosh", OperationDetails("cosh", NODE_MATH_COSH, 1)},
+        {"tanh", OperationDetails("tanh", NODE_MATH_TANH, 1)},
+        {"+", OperationDetails("+", NODE_MATH_ADD, 2)},
+        {"-", OperationDetails("-", NODE_MATH_SUBTRACT, 2)},
+        {"*", OperationDetails("*", NODE_MATH_MULTIPLY, 2)},
+        {"/", OperationDetails("/", NODE_MATH_DIVIDE, 2)},
+        {"^", OperationDetails("^", NODE_MATH_POWER, 2)},
+        {"log", OperationDetails("log", NODE_MATH_LOGARITHM, 2)},
+        {"min", OperationDetails("min", NODE_MATH_MINIMUM, 2)},
+        {"max", OperationDetails("max", NODE_MATH_MAXIMUM, 2)},
+        {"<", OperationDetails("<", NODE_MATH_LESS_THAN, 2)},
+        {">", OperationDetails(">", NODE_MATH_GREATER_THAN, 2)},
+        {"mod", OperationDetails("mod", NODE_MATH_MODULO, 2)},
+        {"snap", OperationDetails("snap", NODE_MATH_SNAP, 2)},
+        {"arctan", OperationDetails("arctan", NODE_MATH_ARCTAN2, 2)},
+        {"pingpong", OperationDetails("pingpong", NODE_MATH_PINGPONG, 2)},
+        {"compare", OperationDetails("compare", NODE_MATH_COMPARE, 3)},
+        {"smoothmin", OperationDetails("smoothmin", NODE_MATH_SMOOTH_MIN, 3)},
+        {"smoothmax", OperationDetails("smoothmax", NODE_MATH_SMOOTH_MAX, 3)},
+        {"wrap", OperationDetails("wrap", NODE_MATH_WRAP, 3)}
     };
 };

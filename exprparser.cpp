@@ -38,10 +38,10 @@ OperatorDetails::OperatorDetails(char op, int precedence, Associativity associat
 
 OperationDetails::OperationDetails() {}
 
-OperationDetails::OperationDetails(string function, NodeMathOperation operation, TokenType type) {
+OperationDetails::OperationDetails(string function, NodeMathOperation operation, short no_of_params) {
     this->function = function;
     this->operation = operation;
-    this->type = type;
+    this->no_of_params = no_of_params;
 }
 
 OperatorDetails ExpressionParser::get_operator_details(char op) {
@@ -246,7 +246,13 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             //TODO - Put correct token type based on function
             optional<OperationDetails> op_map = get_function_details(token_name);
             if (op_map.has_value()) {
-                type = op_map.value().type;
+                if (op_map.value().no_of_params==1) {
+                    type = function_1param;
+                } else if (op_map.value().no_of_params==2) {
+                    type = function_2param;
+                } else if (op_map.value().no_of_params==3) {
+                    type = function_3param;
+                } 
                 operation = op_map.value().operation;
             }
         } else if (is_variable(token_name)) {

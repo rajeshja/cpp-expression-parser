@@ -1,3 +1,6 @@
+const double PI = 3.141592653589793238463;
+const double E =  2.718281828459045235360;
+
 typedef enum NodeMathOperation {
   NODE_MATH_ADD = 0,
   NODE_MATH_SUBTRACT = 1,
