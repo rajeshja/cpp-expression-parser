@@ -36,6 +36,14 @@ OperatorDetails::OperatorDetails(char op, int precedence, Associativity associat
     this->associativity = associativity;
 }
 
+OperationDetails::OperationDetails() {}
+
+OperationDetails::OperationDetails(string function, NodeMathOperation operation, TokenType type) {
+    this->function = function;
+    this->operation = operation;
+    this->type = type;
+}
+
 OperatorDetails ExpressionParser::get_operator_details(char op) {
     //cout << "Searching for " << op << "\n";
     for (OperatorDetails details: OPERATORS_DETAILS) {
@@ -48,18 +56,37 @@ OperatorDetails ExpressionParser::get_operator_details(char op) {
     return OPERATORS_DETAILS[0];
 }
 
+optional<OperationDetails> ExpressionParser::get_function_details(string op) {
+    //cout << "Searching for " << op << "\n";
+    auto search = FUNCTIONS_MAPPING.find(op);
+    if (search==FUNCTIONS_MAPPING.end()) {
+        return {};
+    } else {
+        return search->second;
+    }
+}
+
 ExpressionToken::ExpressionToken() {}
 
 ExpressionToken::ExpressionToken(string token, TokenType type) {
     this->token = token;
     this->type = type;
     this->token_value = NAN;
+    this->operation = NODE_MATH_ADD;
 }
 
 ExpressionToken::ExpressionToken(string token, TokenType type, double value) {
     this->token = token;
     this->type = type;
     this->token_value = value;
+    this->operation = NODE_MATH_ADD;
+}
+
+ExpressionToken::ExpressionToken(string token, TokenType type, NodeMathOperation operation) {
+    this->token = token;
+    this->type = type;
+    this->token_value = NAN;
+    this->operation = operation;
 }
 
 ExpressionParser::ExpressionParser() {}
@@ -78,6 +105,10 @@ bool ExpressionParser::is_letter(char character) {
 
 bool ExpressionParser::is_whitespace(char character) {
     return vector_contains(WHITESPACE, character);
+}
+
+bool ExpressionParser::is_exponent(char character) {
+    return vector_contains(EXPONENTS, character);
 }
 
 bool ExpressionParser::is_operator(char character) {
@@ -129,8 +160,13 @@ double ExpressionParser::get_number(string text) {
     }
 }
 
+// bool ExpressionParser::is_function(string text) {
+//     return vector_contains(FUNCTIONS, text);
+// }
+
 bool ExpressionParser::is_function(string text) {
-    return vector_contains(FUNCTIONS, text);
+    auto search = FUNCTIONS_MAPPING.find(text);
+    return (search!=FUNCTIONS_MAPPING.end());
 }
 
 /* Checks if current operator token has precedence over previous operator token */
@@ -185,38 +221,50 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
         // std::cout << "Token being added, start=" << token_start << " end=" << token_end << ", token=" << token_name << "\n";
         TokenType type;
         double token_value = NAN;
+        NodeMathOperation operation;
         if (is_operator(expression[token_start])) {
-            //TODO: ("Differentiate between unary and binary operators")
-            // If first token, or if previous token is ( or another operator but not )
-            // then it is unary, else binary
             char prev_token_char = get_last_printable_char_before(token_start);
             if ((token_start==0)
                 || (is_operator(prev_token_char) 
                     && prev_token_char!=')')) {
                 if (token_name=="-") {
-                    token_name="_";
+                    token_name="neg";
+                    type = function_1param;
                 } else if (token_name=="+") {
                     token_name="|";
+                } else {
+                    type = unary_operator;
                 }
-                type = TokenType(unary_operator);
             } else {
-                type = TokenType(binary_operator);
+                type = binary_operator;
             }
         } else if (is_number(token_name)) {
-            type = TokenType(number);
+            type = number;
             //token_name = to_string(get_number(token_name));
             token_value = get_number(token_name);
         } else if (is_function(token_name)) {
-            type = TokenType(function);
+            //TODO - Put correct token type based on function
+            optional<OperationDetails> op_map = get_function_details(token_name);
+            if (op_map.has_value()) {
+                type = op_map.value().type;
+                operation = op_map.value().operation;
+            }
         } else if (is_variable(token_name)) {
-            type = TokenType(variable);
+            type = variable;
         } else {
             cerr << "Invalid token " << token_name << "\n";
             return false;
         }
+
+        if (token_name=="|") {
+            return true;
+        }
+
         ExpressionToken token;
-        if (token_value!=NAN) {
+        if (type==number) {
             token = ExpressionToken(token_name, type, token_value);    
+        } else if (type==function_1param || type==function_2param || type==function_3param) {
+            token = ExpressionToken(token_name, type, operation);
         } else {
             token = ExpressionToken(token_name, type);
         }
@@ -224,21 +272,23 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
         //     cout << "Previous: " << tokens[tokens.size()-1].token << "; Current: " << token.token << "\n";
         // }
 
-        if (token_name=="|") {
-            return true;
-        }
-
         tokens.insert(tokens.end(), token);
 
         if (token.type==number || token.type==variable) {
             // cout << "Found a number" << "\n";
             output_queue.push(token);
-        } else if (token.type==unary_operator || token.type==binary_operator || token.type==function) {
+        } else if (token.type==unary_operator
+                    || token.type==binary_operator
+                    || token.type==function_1param
+                    || token.type==function_2param
+                    || token.type==function_3param) {
             // cout << "Found an op" << "\n";
             if (token.token=="("
                 || operator_stack.size()==0
                 || (operator_stack.top().token=="(" && token.token[0]!=')')
-                || token.type==function
+                || token.type==function_1param
+                || token.type==function_2param // TODO Validate this
+                || token.type==function_3param // TODO Validate this
                 || token.type==unary_operator) {
                 // cout << "\tFirst element to stack" << "\n";
                 operator_stack.push(token);
@@ -264,12 +314,11 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
                 operator_stack.push(token);
             }
         }
-        cout << token.token << " | ";
-        dump_stack(false);
-        cout << " | ";
-        dump_queue(false);
-        cout << "\n";
-
+        // cout << token.token << " | ";
+        // dump_stack(false);
+        // cout << " | ";
+        // dump_queue(false);
+        // cout << "\n";
     }
     return true;
 }
@@ -279,9 +328,9 @@ void ExpressionParser::parse() {
     int token_start=0;
     char current_char = expression[i];
     while (current_char!='\0') {
-        if((is_operator(current_char)) 
+        if(((is_operator(current_char) && (i==0 || !is_exponent(expression[i-1])))) 
             || (is_whitespace(current_char))
-            || (is_operator(expression[i-1]))
+            || (is_operator(expression[i-1]) && (i<2 || !is_exponent(expression[i-2])))
             ) {
             bool token_added = add_token(token_start, i);
             if (!token_added) {
@@ -317,20 +366,30 @@ double ExpressionParser::evaluate(map<string, double> variables) {
             evaluation_stack.push(variables.at(curr_token.token));
         } else if (curr_token.type==number) {
             evaluation_stack.push(curr_token.token_value);
-        } else if (curr_token.type==unary_operator || curr_token.type==function) {
+        } else if (curr_token.type==unary_operator || curr_token.type==function_1param) {
             double x = evaluation_stack.top();
             evaluation_stack.pop();
             // Dummy implementation
-            cout << "Evaluating " << curr_token.token_value << "(" << x << ")\n";
-            //Push 0 as dummy value
+            cout << "Evaluating " << curr_token.token << "(" << x << ")\n";
+            //Push 1 as dummy value
             evaluation_stack.push(1);
-        } else if (curr_token.type==binary_operator) {
+        } else if (curr_token.type==binary_operator || curr_token.type==function_2param) {
             double x = evaluation_stack.top();
             evaluation_stack.pop();
             double y = evaluation_stack.top();
             evaluation_stack.pop();
             // Dummy implementation
-            cout << "Evaluating " << x << curr_token.token_value << y << "\n";
+            cout << "Evaluating " << x << curr_token.token << y << "\n";
+            evaluation_stack.push(2);
+        } else if (curr_token.type==function_3param) {
+            double x = evaluation_stack.top();
+            evaluation_stack.pop();
+            double y = evaluation_stack.top();
+            evaluation_stack.pop();
+            double z = evaluation_stack.top();
+            evaluation_stack.pop();
+            // Dummy implementation
+            cout << "Evaluating " << curr_token.token << "(" << x << "," << y << "," << z << ")\n";
             evaluation_stack.push(2);
         }
 
@@ -354,6 +413,14 @@ double ExpressionParser::evaluate(map<string, double> variables) {
     }
 }
 
+double ExpressionParser::execute_math_operation(ExpressionToken operation, double a) {
+    return 0;
+}
+
+double ExpressionParser::execute_math_operation(ExpressionToken operation, double a, double b) {
+    return 0;
+}
+
 void ExpressionParser::dump_tokens() {
     cout << "Tokens" << "\n";
     cout << "============" << "\n";
@@ -372,7 +439,11 @@ void ExpressionParser::dump_queue(bool with_headers) {
         ExpressionToken token = output_queue.front();
         output_queue.push(token);
         output_queue.pop();
-        cout << token.token << " ";
+        if (token.type==number) {
+            cout << token.token_value << " ";
+        } else {
+            cout << token.token << " ";
+        }
     }
     if (with_headers) {
         cout << "\n" << "------------" << "\n";

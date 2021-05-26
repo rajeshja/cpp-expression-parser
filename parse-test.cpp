@@ -12,7 +12,7 @@ void parse_and_print(const char* expression, bool do_evaluate) {
         cout << "------------------\n";
         cout << expression << " -> ";
         parser.dump_queue(false);
-        if (!do_evaluate) {
+        if (do_evaluate) {
             parser.evaluate({
                 {"A", 4}, 
                 {"B", 5},
@@ -36,7 +36,7 @@ int main(int argc, const char** argv) {
     parse_and_print("12+(x)-(3*y^5)", false);
     parse_and_print("12+sin(x)  - (3*y^5)", false);
     parse_and_print("4+18/(9-3)", false);
-    parse_and_print("A * B + C", true);
+    parse_and_print("A * B + C", false);
     parse_and_print("+A * B + C", false);
     parse_and_print("A + B * C", false);
     parse_and_print("A * (B + C)", false);
@@ -44,7 +44,10 @@ int main(int argc, const char** argv) {
     parse_and_print("A * B ^ C + D", false);
     parse_and_print("A * (B + C * D) + E", false);
     parse_and_print("A * (B + C * D) + +E", false);
-    parse_and_print("12+sin(x) - (3*-y^5)", false);
+    parse_and_print("1.2e-1+sin(x) - (3*-y^5)", false);
+    parse_and_print("1.2e+1+sin(x) - (3*-y^5)", false);
+    parse_and_print("1.2e1+sin(x) - (3*-y^5)", false);
+    parse_and_print("1.002+sin(x) - (3*-y^5.0)", false);
 
     // for(int i=0; i<argc; i++) {
     //     cout << argv[i] << "\n";
