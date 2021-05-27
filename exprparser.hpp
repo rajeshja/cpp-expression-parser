@@ -178,6 +178,7 @@ class ExpressionParser {
         {"compare", OperationDetails("compare", NODE_MATH_COMPARE, 3)},
         {"smoothmin", OperationDetails("smoothmin", NODE_MATH_SMOOTH_MIN, 3)},
         {"smoothmax", OperationDetails("smoothmax", NODE_MATH_SMOOTH_MAX, 3)},
-        {"wrap", OperationDetails("wrap", NODE_MATH_WRAP, 3)}
+        {"wrap", OperationDetails("wrap", NODE_MATH_WRAP, 3)},
+        {"neg", OperationDetails("wrap", NODE_MATH_NEG, 1)}
     };
 };
