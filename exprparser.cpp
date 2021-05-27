@@ -75,7 +75,7 @@ ExpressionToken::ExpressionToken(string token, TokenType type) {
     this->operation = NODE_MATH_ADD;
 }
 
-ExpressionToken::ExpressionToken(string token, TokenType type, double value) {
+ExpressionToken::ExpressionToken(string token, TokenType type, float value) {
     this->token = token;
     this->type = type;
     this->token_value = value;
@@ -125,7 +125,7 @@ bool ExpressionParser::is_number(string text) {
     char* pEnd;
     const char* text_c_str = text.c_str(); 
 
-    double parsed_to_d = strtod(text.c_str(), &pEnd);
+    float parsed_to_f = strtod(text.c_str(), &pEnd);
     size_t num_length = (size_t)(pEnd-text_c_str);
     bool valid_parse = text.size() == num_length;
     // cout << "strtod() got this: " << parsed_to_d << "; Length is " << num_length << ", Valid Parse=" << valid_parse << "\n";
@@ -146,10 +146,10 @@ bool ExpressionParser::is_variable(string text) {
     return true;
 }
 
-double ExpressionParser::get_number(string text) {
+float ExpressionParser::get_number(string text) {
     char* pEnd;
     const char* text_c_str = text.c_str(); 
-    double parsed_to_d = strtod(text.c_str(), &pEnd);
+    float parsed_to_d = strtod(text.c_str(), &pEnd);
     size_t num_length = (size_t)(pEnd-text_c_str);
     bool valid_parse = text.size() == num_length;
 
@@ -220,7 +220,7 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
         string token_name(expression+token_start, expression+token_end);
         // std::cout << "Token being added, start=" << token_start << " end=" << token_end << ", token=" << token_name << "\n";
         TokenType type;
-        double token_value = NAN;
+        float token_value = NAN;
         NodeMathOperation operation;
         if (is_operator(expression[token_start])) {
             char prev_token_char = get_last_printable_char_before(token_start);
@@ -238,6 +238,19 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             } else {
                 type = binary_operator;
             }
+            // cout << "About to get details of operator\n";
+            optional<OperationDetails> op_map = get_function_details(token_name);
+            if (op_map.has_value()) {
+                //cout << "Got details of operator " << token_name << " : Params=" << op_map.value().no_of_params << ", operation=" << op_map.value().operation << "\n";
+                if (op_map.value().no_of_params==1) {
+                    type = function_1param;
+                } else if (op_map.value().no_of_params==2) {
+                    type = function_2param;
+                } else if (op_map.value().no_of_params==3) {
+                    type = function_3param;
+                }
+                operation = op_map.value().operation;
+            }
         } else if (is_number(token_name)) {
             type = number;
             //token_name = to_string(get_number(token_name));
@@ -246,13 +259,14 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             //TODO - Put correct token type based on function
             optional<OperationDetails> op_map = get_function_details(token_name);
             if (op_map.has_value()) {
+                cout << "Found function " << op_map.value().function << ", op=" << op_map.value().operation << ", params=" << op_map.value().no_of_params << "\n";
                 if (op_map.value().no_of_params==1) {
                     type = function_1param;
                 } else if (op_map.value().no_of_params==2) {
                     type = function_2param;
                 } else if (op_map.value().no_of_params==3) {
                     type = function_3param;
-                } 
+                }
                 operation = op_map.value().operation;
             }
         } else if (is_variable(token_name)) {
@@ -271,6 +285,8 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             token = ExpressionToken(token_name, type, token_value);    
         } else if (type==function_1param || type==function_2param || type==function_3param) {
             token = ExpressionToken(token_name, type, operation);
+        // } else if (type==unary_operator || type==binary_operator) {
+        //     token = ExpressionToken(token_name, type, operation);
         } else {
             token = ExpressionToken(token_name, type);
         }
@@ -361,45 +377,61 @@ void ExpressionParser::parse() {
     }
 }
 
-double ExpressionParser::evaluate(map<string, double> variables) {
-    stack<double> evaluation_stack;
+float ExpressionParser::evaluate(map<string, float> variables) {
+    stack<float> evaluation_stack;
 
-    cout << "\n";
+    cout << "!\n";
 
     while (!output_queue.empty()) {
         ExpressionToken curr_token = output_queue.front();
         if (curr_token.type==variable) {
+            cout << "Pushing " << curr_token.token << "=" << variables.at(curr_token.token) << ", ";
             evaluation_stack.push(variables.at(curr_token.token));
         } else if (curr_token.type==number) {
+            cout << "Pushing " << curr_token.token_value << ", ";
             evaluation_stack.push(curr_token.token_value);
         } else if (curr_token.type==unary_operator || curr_token.type==function_1param) {
-            double x = evaluation_stack.top();
+            float x = evaluation_stack.top();
             evaluation_stack.pop();
-            // Dummy implementation
-            cout << "Evaluating " << curr_token.token << "(" << x << ")\n";
-            //Push 1 as dummy value
-            evaluation_stack.push(1);
+            cout << "Evaluating " << curr_token.token << "[" << curr_token.operation<< "]" << "(" << x << ")\n";
+            float result;
+            bool success = try_dispatch_float_math_fl_to_fl(
+                curr_token.operation, [&](auto math_function) {
+                    result = math_function(x);
+                });
+            evaluation_stack.push(result);
         } else if (curr_token.type==binary_operator || curr_token.type==function_2param) {
-            double x = evaluation_stack.top();
+            float x = evaluation_stack.top();
             evaluation_stack.pop();
-            double y = evaluation_stack.top();
+            float y = evaluation_stack.top();
             evaluation_stack.pop();
-            // Dummy implementation
-            cout << "Evaluating " << x << curr_token.token << y << "\n";
-            evaluation_stack.push(2);
+            cout << "Evaluating " << curr_token.token << "[" << curr_token.operation<< "]" << "(" << x << "," << y << ")";
+            float result;
+            bool success = try_dispatch_float_math_fl_fl_to_fl(
+                curr_token.operation, [&](auto math_function) {
+                    result = math_function(x, y);
+                });
+            cout << " = " << result << "\n";
+            evaluation_stack.push(result);
         } else if (curr_token.type==function_3param) {
-            double x = evaluation_stack.top();
+            float x = evaluation_stack.top();
             evaluation_stack.pop();
-            double y = evaluation_stack.top();
+            float y = evaluation_stack.top();
             evaluation_stack.pop();
-            double z = evaluation_stack.top();
+            float z = evaluation_stack.top();
             evaluation_stack.pop();
-            // Dummy implementation
-            cout << "Evaluating " << curr_token.token << "(" << x << "," << y << "," << z << ")\n";
-            evaluation_stack.push(2);
+            cout << "Evaluating " << curr_token.token << "[" << curr_token.operation<< "]" << "(" << x << "," << y << "," << z << ")\n";
+            float result;
+            bool success = try_dispatch_float_math_fl_fl_fl_to_fl(
+                curr_token.operation, [&](auto math_function) {
+                    result = math_function(x, y, z);
+                });
+            evaluation_stack.push(result);
+        } else {
+            cout << "Did nothing!\n";
         }
 
-        stack<double> temp;
+        stack<float> temp;
         while (!evaluation_stack.empty()) {
             temp.push(evaluation_stack.top());
             evaluation_stack.pop();
@@ -419,11 +451,11 @@ double ExpressionParser::evaluate(map<string, double> variables) {
     }
 }
 
-double ExpressionParser::execute_math_operation(ExpressionToken operation, double a) {
+float ExpressionParser::execute_math_operation(ExpressionToken operation, float a) {
     return 0;
 }
 
-double ExpressionParser::execute_math_operation(ExpressionToken operation, double a, double b) {
+float ExpressionParser::execute_math_operation(ExpressionToken operation, float a, float b) {
     return 0;
 }
 

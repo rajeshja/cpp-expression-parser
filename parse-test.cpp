@@ -13,7 +13,7 @@ void parse_and_print(const char* expression, bool do_evaluate) {
         cout << expression << " -> ";
         parser.dump_queue(false);
         if (do_evaluate) {
-            parser.evaluate({
+            float result = parser.evaluate({
                 {"A", 4}, 
                 {"B", 5},
                 {"C", 6},
@@ -22,6 +22,7 @@ void parse_and_print(const char* expression, bool do_evaluate) {
                 {"x", 7},
                 {"y", 2}
             });
+            cout << "\nAnswer is: " << result << "\n";
         }
         cout << "\n\n";
     } catch (const invalid_argument& e) {

@@ -50,10 +50,10 @@ class ExpressionToken {
     public:
     ExpressionToken();
     ExpressionToken(string token, TokenType type);
-    ExpressionToken(string token, TokenType type, double value);
+    ExpressionToken(string token, TokenType type, float value);
     ExpressionToken(string token, TokenType type, NodeMathOperation operation);
     string token;
-    double token_value;
+    float token_value;
     NodeMathOperation operation;
     TokenType type;
 };
@@ -68,12 +68,12 @@ class ExpressionParser {
     void dump_stack(bool with_headers);
     OperatorDetails get_operator_details(char op);
     optional<OperationDetails> get_function_details(string op);
-    double evaluate(map<string, double> variables);
+    float evaluate(map<string, float> variables);
     private:
     bool add_token(int token_start, int token_end);
     bool has_precedence(ExpressionToken curr, ExpressionToken prev);
-    double execute_math_operation(ExpressionToken operation, double a);
-    double execute_math_operation(ExpressionToken operation, double a, double b);
+    float execute_math_operation(ExpressionToken operation, float a);
+    float execute_math_operation(ExpressionToken operation, float a, float b);
     bool is_operator(char character);
     bool is_digit(char character);
     bool is_letter(char character);
@@ -83,7 +83,7 @@ class ExpressionParser {
     bool is_number(string text);
     bool is_constant(string text);
     bool is_variable(string text);
-    double get_number(string text);
+    float get_number(string text);
     void pop_opstack_to_outqueue();
     char get_last_printable_char_before(int index);
     const char* expression;
