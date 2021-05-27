@@ -160,10 +160,6 @@ float ExpressionParser::get_number(string text) {
     }
 }
 
-// bool ExpressionParser::is_function(string text) {
-//     return vector_contains(FUNCTIONS, text);
-// }
-
 bool ExpressionParser::is_function(string text) {
     auto search = FUNCTIONS_MAPPING.find(text);
     return (search!=FUNCTIONS_MAPPING.end());
@@ -174,31 +170,15 @@ bool ExpressionParser::has_precedence(ExpressionToken prev, ExpressionToken curr
     OperatorDetails prev_details = get_operator_details(prev.token[0]);
     OperatorDetails curr_details = get_operator_details(curr.token[0]);
 
-    // cout << "prev: " << prev.token[0] << " | curr: " << curr.token[0] << " | " 
-    //     << "prevf: " << prev_details.op << " | currf: " << curr_details.op << " | " 
-    //     << "prev prec: " << prev_details.precedence << " | curr prec: " << curr_details.precedence
-    //     << " ; ";
-
     if (prev_details.precedence == curr_details.precedence) {
-        //cout << (curr_details.associativity == right_associative ? "Curr has precedence with associativity. " : "Prev has precedence with associativity. ");
         return curr_details.associativity == right_associative;
     } else {
-        //cout << (curr_details.precedence < prev_details.precedence ? "Curr has precedence. " : "Prev has precedence. ");
         return curr_details.precedence < prev_details.precedence;
     }
-
-    // int prev_precedence = vector_find(OPERATORS, prev.token[0]);
-    // int curr_precedence = vector_find(OPERATORS, curr.token[0]);
-    // //cout << "prev: " << prev.token << ", curr: " << curr.token << ". prev prec: " << prev_precedence << ". curr prec: " << curr_precedence;
-    // if (prev_precedence == curr_precedence) {
-
-    // }
-    // return prev_precedence > curr_precedence;
 }
 
 void ExpressionParser::pop_opstack_to_outqueue() {
     output_queue.push(operator_stack.top());
-    // cout << "Moving from stack to queue: " << operator_stack.top().token << "\n";
     operator_stack.pop();
 }
 
@@ -218,7 +198,6 @@ char ExpressionParser::get_last_printable_char_before(int index) {
 bool ExpressionParser::add_token(int token_start, int token_end) {
     if (token_start<token_end) {
         string token_name(expression+token_start, expression+token_end);
-        // std::cout << "Token being added, start=" << token_start << " end=" << token_end << ", token=" << token_name << "\n";
         TokenType type;
         float token_value = NAN;
         NodeMathOperation operation;
@@ -238,28 +217,16 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             } else {
                 type = binary_operator;
             }
-            // cout << "About to get details of operator\n";
             optional<OperationDetails> op_map = get_function_details(token_name);
             if (op_map.has_value()) {
-                //cout << "Got details of operator " << token_name << " : Params=" << op_map.value().no_of_params << ", operation=" << op_map.value().operation << "\n";
-                // if (op_map.value().no_of_params==1) {
-                //     type = function_1param;
-                // } else if (op_map.value().no_of_params==2) {
-                //     type = function_2param;
-                // } else if (op_map.value().no_of_params==3) {
-                //     type = function_3param;
-                // }
                 operation = op_map.value().operation;
             }
         } else if (is_number(token_name)) {
             type = number;
-            //token_name = to_string(get_number(token_name));
             token_value = get_number(token_name);
         } else if (is_function(token_name)) {
-            //TODO - Put correct token type based on function
             optional<OperationDetails> op_map = get_function_details(token_name);
             if (op_map.has_value()) {
-                cout << "Found function " << op_map.value().function << ", op=" << op_map.value().operation << ", params=" << op_map.value().no_of_params << "\n";
                 if (op_map.value().no_of_params==1) {
                     type = function_1param;
                 } else if (op_map.value().no_of_params==2) {
@@ -290,11 +257,6 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
         } else {
             token = ExpressionToken(token_name, type);
         }
-        // if (tokens.size()>0) {
-        //     cout << "Previous: " << tokens[tokens.size()-1].token << "; Current: " << token.token << "\n";
-        // }
-
-        tokens.insert(tokens.end(), token);
 
         if (token.type==number || token.type==variable) {
             // cout << "Found a number" << "\n";
@@ -457,15 +419,6 @@ float ExpressionParser::execute_math_operation(ExpressionToken operation, float 
 
 float ExpressionParser::execute_math_operation(ExpressionToken operation, float a, float b) {
     return 0;
-}
-
-void ExpressionParser::dump_tokens() {
-    cout << "Tokens" << "\n";
-    cout << "============" << "\n";
-    for (ExpressionToken token: tokens) {
-        std::cout << token.token << ": " << token.type << "\n";
-    }
-    cout << "------------" << "\n";
 }
 
 void ExpressionParser::dump_queue(bool with_headers) {

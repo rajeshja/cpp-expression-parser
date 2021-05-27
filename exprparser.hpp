@@ -87,7 +87,7 @@ class ExpressionParser {
     void pop_opstack_to_outqueue();
     char get_last_printable_char_before(int index);
     const char* expression;
-    vector<ExpressionToken> tokens;
+    //vector<ExpressionToken> tokens;
     stack<ExpressionToken> operator_stack;
     queue<ExpressionToken> output_queue;
     vector<OperatorDetails> OPERATORS_DETAILS {
@@ -130,17 +130,6 @@ class ExpressionParser {
         'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
         'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
         'Y', 'Z'
-    };
-    vector<string> FUNCTIONS {
-        "sin",
-        "cos",
-        "tan",
-        "sec",
-        "cosec",
-        "log10",
-        "loge",
-        "abs",
-        "sqrt"
     };
     map<string, OperationDetails> FUNCTIONS_MAPPING {
         {"abs", OperationDetails("abs", NODE_MATH_ABSOLUTE, 1)},
