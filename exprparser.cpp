@@ -249,7 +249,7 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
         Token_Type type;
         float token_value = NAN;
         NodeMathOperation operation;
-        Expression_Token token_new;
+        Expression_Token* token_new = nullptr;
         if (is_operator(expression[token_start])) {
             char prev_token_char = get_last_printable_char_before(token_start);
             bool is_prefix;
@@ -283,8 +283,7 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             optional<OperationDetails> op_map = get_function_details(token_name);
             if (op_map.has_value()) {
                 operation = op_map.value().operation;
-
-                token_new = OperationToken(token_name, is_prefix, is_function,
+                token_new = new OperationToken(token_name, is_prefix, is_function,
                                             op_map.value().no_of_params,
                                             op_map.value().operation);
 
@@ -293,7 +292,7 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             type = number;
             token_value = get_number(token_name);
             // Using new Token classes
-            token_new = NumberToken(token_name, token_value);
+            token_new = new NumberToken(token_name, token_value);
         } else if (is_function(token_name)) {
             optional<OperationDetails> op_map = get_function_details(token_name);
             if (op_map.has_value()) {
@@ -305,13 +304,16 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
                     type = function_3param;
                 }
                 operation = op_map.value().operation;
-                token_new = OperationToken(token_name, true, true,
+                token_new = new OperationToken(token_name, true, true,
                                             op_map.value().no_of_params,
                                             op_map.value().operation);
+            } else {
+                token_new = new OperationToken(token_name, true, true,
+                                            0, NODE_MATH_ABSOLUTE);
             }
         } else if (is_variable(token_name)) {
             type = variable;
-            token_new = VariableToken(token_name);
+            token_new = new VariableToken(token_name);
         } else {
             cerr << "Invalid token " << token_name << "\n";
             return false;
@@ -332,13 +334,13 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             token = ExpressionToken(token_name, type);
         }
 
-        NumberToken* num = dynamic_cast<NumberToken*>(&token_new);
+        NumberToken* num = dynamic_cast<NumberToken*>(token_new);
 
-        if (dynamic_cast<NumberToken*>(&token_new) || dynamic_cast<VariableToken*>(&token_new)) {
+        if (dynamic_cast<NumberToken*>(token_new) || dynamic_cast<VariableToken*>(token_new)) {
             // cout << "Found a number" << "\n";
             output_queue.push(token);
-        } else if (dynamic_cast<OperationToken*>(&token_new)) {
-            OperationToken* opToken = dynamic_cast<OperationToken*>(&token_new);
+        } else if (dynamic_cast<OperationToken*>(token_new)) {
+            OperationToken* opToken = dynamic_cast<OperationToken*>(token_new);
             // cout << "Found an op" << "\n";
             if (opToken->text=="("
                 || operator_stack.size()==0
