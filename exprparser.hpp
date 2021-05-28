@@ -44,12 +44,13 @@ class OperationDetails {
     private:
 };
 
-class Token {
+class Expression_Token {
     public:
+    virtual ~Expression_Token() = default;
     string text;
 };
 
-class ValueToken : public Token {
+class ValueToken : public Expression_Token {
     public:
     float value;
 };
@@ -63,13 +64,15 @@ class NumberToken : public ValueToken {
 };
 
 class VariableToken : public ValueToken {
-
+    public:
+    VariableToken();
+    VariableToken(string value);
 };
 
-class OperationToken : public Token {
+class OperationToken : public Expression_Token {
     public:
     OperationToken();
-    OperationToken(string text, bool is_prefix, bool is_function, short no_of_params);
+    OperationToken(string text, bool is_prefix, bool is_function, short no_of_params, NodeMathOperation operation);
     bool is_prefix;
     bool is_function;
     short no_of_params;

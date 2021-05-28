@@ -105,13 +105,20 @@ void NumberToken::set_value(float value) {
     this->value=value;
 }
 
+VariableToken::VariableToken() {}
+
+VariableToken::VariableToken(string text) {
+    this->text=text;
+}
+
 OperationToken::OperationToken() {}
 
-OperationToken::OperationToken(string text, bool is_prefix, bool is_function, short no_of_params) {
+OperationToken::OperationToken(string text, bool is_prefix, bool is_function, short no_of_params, NodeMathOperation operation) {
     this->text=text;
     this->is_prefix=is_prefix;
     this->is_function=is_function;
     this->no_of_params=no_of_params;
+    this->operation=operation;
 }
 
 ExpressionParser::ExpressionParser() {}
@@ -242,29 +249,51 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
         Token_Type type;
         float token_value = NAN;
         NodeMathOperation operation;
+        Expression_Token token_new;
         if (is_operator(expression[token_start])) {
             char prev_token_char = get_last_printable_char_before(token_start);
+            bool is_prefix;
+            bool is_function;
             if ((token_start==0)
                 || (is_operator(prev_token_char) 
                     && prev_token_char!=')')) {
                 if (token_name=="-") {
                     token_name="neg";
                     type = function_1param;
+
+                    is_prefix = true;
+                    is_function = true;
                 } else if (token_name=="+") {
                     token_name="|";
+
+                    is_prefix = true;
+                    is_function = true;
                 } else {
                     type = unary_operator;
+
+                    is_prefix = true;
+                    is_function = false;
                 }
             } else {
                 type = binary_operator;
+
+                is_prefix = false;
+                is_function = false;
             }
             optional<OperationDetails> op_map = get_function_details(token_name);
             if (op_map.has_value()) {
                 operation = op_map.value().operation;
+
+                token_new = OperationToken(token_name, is_prefix, is_function,
+                                            op_map.value().no_of_params,
+                                            op_map.value().operation);
+
             }
         } else if (is_number(token_name)) {
             type = number;
             token_value = get_number(token_name);
+            // Using new Token classes
+            token_new = NumberToken(token_name, token_value);
         } else if (is_function(token_name)) {
             optional<OperationDetails> op_map = get_function_details(token_name);
             if (op_map.has_value()) {
@@ -276,9 +305,13 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
                     type = function_3param;
                 }
                 operation = op_map.value().operation;
+                token_new = OperationToken(token_name, true, true,
+                                            op_map.value().no_of_params,
+                                            op_map.value().operation);
             }
         } else if (is_variable(token_name)) {
             type = variable;
+            token_new = VariableToken(token_name);
         } else {
             cerr << "Invalid token " << token_name << "\n";
             return false;
@@ -299,22 +332,18 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
             token = ExpressionToken(token_name, type);
         }
 
-        if (token.type==number || token.type==variable) {
+        NumberToken* num = dynamic_cast<NumberToken*>(&token_new);
+
+        if (dynamic_cast<NumberToken*>(&token_new) || dynamic_cast<VariableToken*>(&token_new)) {
             // cout << "Found a number" << "\n";
             output_queue.push(token);
-        } else if (token.type==unary_operator
-                    || token.type==binary_operator
-                    || token.type==function_1param
-                    || token.type==function_2param
-                    || token.type==function_3param) {
+        } else if (dynamic_cast<OperationToken*>(&token_new)) {
+            OperationToken* opToken = dynamic_cast<OperationToken*>(&token_new);
             // cout << "Found an op" << "\n";
-            if (token.token=="("
+            if (opToken->text=="("
                 || operator_stack.size()==0
-                || (operator_stack.top().token=="(" && token.token[0]!=')')
-                || token.type==function_1param
-                || token.type==function_2param
-                || token.type==function_3param
-                || token.type==unary_operator) {
+                || (operator_stack.top().token=="(" && opToken->text[0]!=')')
+                || opToken->is_prefix==true) {
                 // cout << "\tFirst element to stack" << "\n";
                 operator_stack.push(token);
             } else if (token.token[0]==')') {
