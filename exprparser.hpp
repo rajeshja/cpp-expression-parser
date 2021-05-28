@@ -44,6 +44,38 @@ class OperationDetails {
     private:
 };
 
+class Token {
+    public:
+    string text;
+};
+
+class ValueToken : public Token {
+    public:
+    float value;
+};
+
+class NumberToken : public ValueToken {
+    public:
+    NumberToken();
+    NumberToken(string text);
+    NumberToken(string text, float value);
+    void set_value(float value);
+};
+
+class VariableToken : public ValueToken {
+
+};
+
+class OperationToken : public Token {
+    public:
+    OperationToken();
+    OperationToken(string text, bool is_prefix, bool is_function, short no_of_params);
+    bool is_prefix;
+    bool is_function;
+    short no_of_params;
+    NodeMathOperation operation;
+};
+
 // TODO Should use an Expression Token base class, with number, variable and operation subclasses 
 // TODO That way we don't need so many token types - except while parsing
 class ExpressionToken {
@@ -71,7 +103,8 @@ class ExpressionParser {
     float evaluate(map<string, float> variables);
     private:
     bool add_token(int token_start, int token_end);
-    bool has_precedence(ExpressionToken curr, ExpressionToken prev);
+    bool has_precedence(ExpressionToken prev, ExpressionToken curr);
+    bool has_precedence(OperationToken prev, OperationToken curr);
     float execute_math_operation(ExpressionToken operation, float a);
     float execute_math_operation(ExpressionToken operation, float a, float b);
     bool is_operator(char character);

@@ -89,6 +89,31 @@ ExpressionToken::ExpressionToken(string token, TokenType type, NodeMathOperation
     this->operation = operation;
 }
 
+NumberToken::NumberToken() {}
+
+NumberToken::NumberToken(string text) {
+    this->text=text;
+    this->value=NAN;
+}
+
+NumberToken::NumberToken(string text, float value) {
+    this->text=text;
+    this->value=value;
+}
+
+void NumberToken::set_value(float value) {
+    this->value=value;
+}
+
+OperationToken::OperationToken() {}
+
+OperationToken::OperationToken(string text, bool is_prefix, bool is_function, short no_of_params) {
+    this->text=text;
+    this->is_prefix=is_prefix;
+    this->is_function=is_function;
+    this->no_of_params=no_of_params;
+}
+
 ExpressionParser::ExpressionParser() {}
 
 ExpressionParser::ExpressionParser(const char* expression) {
@@ -121,6 +146,9 @@ bool ExpressionParser::is_operator(char character) {
     //return vector_contains(DIGITS, character);
 }
 
+// TODO - Does this need to be part of the class?
+//        Looks like a utility method that has no 
+//        dependencies other than std ones.  
 bool ExpressionParser::is_number(string text) {
     char* pEnd;
     const char* text_c_str = text.c_str(); 
@@ -175,6 +203,19 @@ bool ExpressionParser::has_precedence(ExpressionToken prev, ExpressionToken curr
     } else {
         return curr_details.precedence < prev_details.precedence;
     }
+}
+
+/* Checks if current operator token has precedence over previous operator token (using new operation token) */
+bool ExpressionParser::has_precedence(OperationToken prev, OperationToken curr) {
+    OperatorDetails prev_details = get_operator_details(prev.text[0]);
+    OperatorDetails curr_details = get_operator_details(curr.text[0]);
+
+    if (prev_details.precedence == curr_details.precedence) {
+        return curr_details.associativity == right_associative;
+    } else {
+        return curr_details.precedence < prev_details.precedence;
+    }
+    return true;
 }
 
 void ExpressionParser::pop_opstack_to_outqueue() {
@@ -271,8 +312,8 @@ bool ExpressionParser::add_token(int token_start, int token_end) {
                 || operator_stack.size()==0
                 || (operator_stack.top().token=="(" && token.token[0]!=')')
                 || token.type==function_1param
-                || token.type==function_2param // TODO Validate this
-                || token.type==function_3param // TODO Validate this
+                || token.type==function_2param
+                || token.type==function_3param
                 || token.type==unary_operator) {
                 // cout << "\tFirst element to stack" << "\n";
                 operator_stack.push(token);
