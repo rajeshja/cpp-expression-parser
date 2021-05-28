@@ -9,7 +9,7 @@
 
 using namespace std;
 
-enum TokenType {
+enum Token_Type {
     number,
     unary_operator,
     binary_operator,
@@ -81,13 +81,13 @@ class OperationToken : public Token {
 class ExpressionToken {
     public:
     ExpressionToken();
-    ExpressionToken(string token, TokenType type);
-    ExpressionToken(string token, TokenType type, float value);
-    ExpressionToken(string token, TokenType type, NodeMathOperation operation);
+    ExpressionToken(string token, Token_Type type);
+    ExpressionToken(string token, Token_Type type, float value);
+    ExpressionToken(string token, Token_Type type, NodeMathOperation operation);
     string token;
     float token_value;
     NodeMathOperation operation;
-    TokenType type;
+    Token_Type type;
 };
 
 class ExpressionParser {
