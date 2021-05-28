@@ -153,10 +153,10 @@ bool ExpressionParser::is_number(string text) {
     char* pEnd;
     const char* text_c_str = text.c_str(); 
 
-    float parsed_to_f = strtod(text.c_str(), &pEnd);
+    float parsed_to_f = strtof(text.c_str(), &pEnd);
     size_t num_length = (size_t)(pEnd-text_c_str);
     bool valid_parse = text.size() == num_length;
-    // cout << "strtod() got this: " << parsed_to_d << "; Length is " << num_length << ", Valid Parse=" << valid_parse << "\n";
+    // cout << "strtof() got this: " << parsed_to_d << "; Length is " << num_length << ", Valid Parse=" << valid_parse << "\n";
 
     return valid_parse;
 }
@@ -177,12 +177,12 @@ bool ExpressionParser::is_variable(string text) {
 float ExpressionParser::get_number(string text) {
     char* pEnd;
     const char* text_c_str = text.c_str(); 
-    float parsed_to_d = strtod(text.c_str(), &pEnd);
+    float parsed_to_f = strtof(text.c_str(), &pEnd);
     size_t num_length = (size_t)(pEnd-text_c_str);
     bool valid_parse = text.size() == num_length;
 
     if (valid_parse) {
-        return parsed_to_d;
+        return parsed_to_f;
     } else {
         return 0.0;
     }
