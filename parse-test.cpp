@@ -33,22 +33,22 @@ void parse_and_print(const char* expression, bool do_evaluate) {
 int main(int argc, const char** argv) {
 
     parse_and_print("12+x-(03*y^5)", true);
-    parse_and_print("12+x-(3k*y^5)", false);
-    parse_and_print("12+(x)-(3*y^5)", false);
-    parse_and_print("12+sin(x)  - (3*y^5)", false);
-    parse_and_print("4+18/(9-3)", false);
+    parse_and_print("12+x-(3k*y^5)", true);
+    parse_and_print("12+(x)-(3*y^5)", true);
+    parse_and_print("12+sin(x)  - (3*y^5)", true);
+    parse_and_print("4+18/(9-3)", true);
     parse_and_print("A * B + C", true);
     parse_and_print("+A * B + C", true);
     parse_and_print("A + B * C", true);
-    parse_and_print("A * (B + C)", false);
-    parse_and_print("A - B + C", false);
-    parse_and_print("A * B ^ C + D", false);
-    parse_and_print("A * (B + C * D) + E", false);
-    parse_and_print("A * (B + C * D) + +E", false);
-    parse_and_print("1.2e-1+sin(x) - (3*-y^5)", false);
-    parse_and_print("1.2e+1+sin(x) - (3*-y^5)", false);
-    parse_and_print("1.2e1+sin(x) - (3*-y^5)", false);
-    parse_and_print("1.002+sin(x) - (3*-y^5.0)", false);
+    parse_and_print("A * (B + C)", true);
+    parse_and_print("A - B + C", true);
+    parse_and_print("A * B ^ C + D", true);
+    parse_and_print("A * (B + C * D) + E", true);
+    parse_and_print("A * (B + C * D) + +E", true);
+    parse_and_print("1.2e-1+sin(x) - (3*-y^5)", true);
+    parse_and_print("1.2e+1+sin(x) - (3*-y^5)", true);
+    parse_and_print("1.2e1+sin(x) - (3*-y^5)", true);
+    parse_and_print("1.002+sin(x) - (3*-y^5.0)", true);
 
     // for(int i=0; i<argc; i++) {
     //     cout << argv[i] << "\n";

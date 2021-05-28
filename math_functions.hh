@@ -1,4 +1,5 @@
 #include "math.h"
+#include "float.h"
 
 #define PI 3.14159
 
@@ -215,6 +216,8 @@ inline bool try_dispatch_float_math_fl_to_fl(const int operation, Callback &&cal
       return dispatch([](float a) { return safe_acosf(a); });
     case NODE_MATH_ARCTANGENT:
       return dispatch([](float a) { return atanf(a); });
+    case NODE_MATH_NEG:
+      return dispatch([](float a) { return -a; });
   }
   return false;
 }
