@@ -9,16 +9,6 @@
 
 using namespace std;
 
-enum Token_Type {
-    number,
-    unary_operator,
-    binary_operator,
-    variable,
-    function_1param,
-    function_2param,
-    function_3param
-};
-
 enum Associativity {
     left_associative,
     non_associative,
@@ -79,24 +69,11 @@ class OperationToken : public Expression_Token {
     NodeMathOperation operation;
 };
 
-// TODO Should use an Expression Token base class, with number, variable and operation subclasses 
-// TODO That way we don't need so many token types - except while parsing
-class ExpressionToken {
-    public:
-    ExpressionToken();
-    ExpressionToken(string token, Token_Type type);
-    ExpressionToken(string token, Token_Type type, float value);
-    ExpressionToken(string token, Token_Type type, NodeMathOperation operation);
-    string token;
-    float token_value;
-    NodeMathOperation operation;
-    Token_Type type;
-};
-
 class ExpressionParser {
     public:
     ExpressionParser();
     ExpressionParser(const char* expression);
+    void set_expression(const char* expression);
     void parse();
     void dump_tokens();
     void dump_queue(bool with_headers);
@@ -106,10 +83,7 @@ class ExpressionParser {
     float evaluate(map<string, float> variables);
     private:
     bool add_token(int token_start, int token_end);
-    bool has_precedence(ExpressionToken prev, ExpressionToken curr);
-    bool has_precedence(OperationToken prev, OperationToken curr);
-    float execute_math_operation(ExpressionToken operation, float a);
-    float execute_math_operation(ExpressionToken operation, float a, float b);
+    bool has_precedence(OperationToken* prev, OperationToken* curr);
     bool is_operator(char character);
     bool is_digit(char character);
     bool is_letter(char character);
@@ -120,12 +94,12 @@ class ExpressionParser {
     bool is_constant(string text);
     bool is_variable(string text);
     float get_number(string text);
-    void pop_opstack_to_outqueue();
+    float get_constant_value(string text);
+    void pop_operationstack_to_outqueue();
     char get_last_printable_char_before(int index);
     const char* expression;
-    //vector<ExpressionToken> tokens;
-    stack<ExpressionToken> operator_stack;
-    queue<ExpressionToken> output_queue;
+    stack<OperationToken*> operation_stack;
+    queue<Expression_Token*> output_queue_new;
     vector<OperatorDetails> OPERATORS_DETAILS {
         OperatorDetails('(', 1, left_associative),
         OperatorDetails(')', 1, left_associative),
@@ -156,6 +130,10 @@ class ExpressionParser {
         '7',
         '8',
         '9',
+    };
+    map<string, float> CONSTANTS {
+        {"pi", 3.1415927}, // Replace with M_PI 
+        {"e", 2.7182818}   // and M_E 
     };
     vector<char> LETTERS {
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',

@@ -1,7 +1,7 @@
 #include "math.h"
 #include "float.h"
 
-#define PI 3.14159
+#define PI 3.1415927
 
 #define MINLINE static __forceinline
 
