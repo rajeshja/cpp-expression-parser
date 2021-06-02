@@ -12,7 +12,8 @@ using namespace std;
 enum Associativity {
     left_associative,
     non_associative,
-    right_associative
+    right_associative,
+    grouping_only
 };
 
 class OperatorDetails {
@@ -73,13 +74,14 @@ class ExpressionParser {
     public:
     ExpressionParser();
     ExpressionParser(const char* expression);
-    void set_expression(const char* expression);
+    void set_expression(const char *expression);
     void parse();
     void dump_tokens();
     void dump_queue(bool with_headers);
     void dump_stack(bool with_headers);
     OperatorDetails get_operator_details(char op);
     optional<OperationDetails> get_function_details(string op);
+    bool can_evaluate();
     float evaluate(map<string, float> variables);
     private:
     bool add_token(int token_start, int token_end);
@@ -94,21 +96,23 @@ class ExpressionParser {
     bool is_constant(string text);
     bool is_variable(string text);
     float get_number(string text);
-    float get_constant_value(string text);
+    float get_constant(string text);
     void pop_operationstack_to_outqueue();
     char get_last_printable_char_before(int index);
     const char* expression;
+    bool valid_queue = false;
     stack<OperationToken*> operation_stack;
     queue<Expression_Token*> output_queue_new;
     vector<OperatorDetails> OPERATORS_DETAILS {
-        OperatorDetails('(', 1, left_associative),
-        OperatorDetails(')', 1, left_associative),
+        OperatorDetails('(', 1, grouping_only),
+        OperatorDetails(')', 1, grouping_only),
         OperatorDetails('^', 2, right_associative),
         OperatorDetails('%', 3, left_associative),
         OperatorDetails('/', 3, left_associative),
         OperatorDetails('*', 3, left_associative),
         OperatorDetails('-', 4, left_associative),
         OperatorDetails('+', 4, left_associative),
+        OperatorDetails(',', 100, grouping_only),
     };
     vector<char> WHITESPACE {
         ' ',
@@ -116,7 +120,6 @@ class ExpressionParser {
         '\0'
     };
     vector<char> EXPONENTS {
-        'e',
         'E'
     };
     vector<char> DIGITS {
@@ -131,11 +134,7 @@ class ExpressionParser {
         '8',
         '9',
     };
-    map<string, float> CONSTANTS {
-        {"pi", 3.1415927}, // Replace with M_PI 
-        {"e", 2.7182818}   // and M_E 
-    };
-    vector<char> LETTERS {
+    vector<char> LETTERS{
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
         'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
         'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
@@ -145,7 +144,11 @@ class ExpressionParser {
         'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
         'Y', 'Z'
     };
-    map<string, OperationDetails> FUNCTIONS_MAPPING {
+    map<string, float> CONSTANTS{
+      {"pi", M_PI},
+      {"e", M_E}
+    };
+    map<string, OperationDetails> FUNCTIONS_MAPPING{
         {"abs", OperationDetails("abs", NODE_MATH_ABSOLUTE, 1)},
         {"exp", OperationDetails("exp", NODE_MATH_EXPONENT, 1)},
         {"sign", OperationDetails("sign", NODE_MATH_SIGN, 1)},
